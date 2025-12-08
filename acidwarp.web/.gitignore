@@ -1,0 +1,11 @@
+# Emscripten SDK
+emsdk/
+
+# Build artifacts that can be regenerated
+*.o
+*.bc
+
+# Editor files
+*~
+*.swp
+.vscode/

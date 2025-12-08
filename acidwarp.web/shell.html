@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acidwarp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            color: #0f0;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #0f0;
+            font-size: 2em;
+        }
+        
+        #canvas-container {
+            position: relative;
+            border: 2px solid #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        canvas.emscripten {
+            display: block;
+            background: #000;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .controls kbd {
+            background: #222;
+            border: 1px solid #0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+        
+        #status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #0a0;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        
+        .footer a {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚗️ ACIDWARP</h1>
+    
+    <div id="canvas-container">
+        <div class="loading" id="loading">Loading...</div>
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+    </div>
+    
+    <div class="controls">
+        <kbd>M</kbd> Toggle Mode &nbsp;
+        <kbd>←</kbd><kbd>→</kbd> Prev/Next &nbsp;
+        <kbd>SPACE</kbd> Pause &nbsp;
+        <kbd>L</kbd> Lock &nbsp;
+        <kbd>F</kbd> Fullscreen
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="footer">
+        Original by Noah Spurrier (1992) • Linux port by Steven Wills • WebGL port by nano (2025)
+    </div>
+
+    <script type='text/javascript'>
+        var statusElement = document.getElementById('status');
+        var loadingElement = document.getElementById('loading');
+        
+        var Module = {
+            preRun: [],
+            postRun: [function() {
+                loadingElement.style.display = 'none';
+            }],
+            print: function(text) {
+                console.log(text);
+            },
+            printErr: function(text) {
+                console.error(text);
+            },
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                canvas.addEventListener("webglcontextlost", function(e) {
+                    alert('WebGL context lost. Reload the page.');
+                    e.preventDefault();
+                }, false);
+                return canvas;
+            })(),
+            setStatus: function(text) {
+                if (text) {
+                    statusElement.innerHTML = text;
+                } else {
+                    statusElement.innerHTML = '';
+                }
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Loading... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : '');
+            }
+        };
+        
+        Module.setStatus('Downloading...');
+        
+        window.onerror = function() {
+            Module.setStatus('Error! Check console for details.');
+            loadingElement.innerHTML = 'Error loading';
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>

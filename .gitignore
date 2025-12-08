@@ -1,0 +1,33 @@
+# Build artifacts
+*.o
+*.a
+acidwarp/build/
+
+# Emscripten SDK (users install separately)
+acidwarp.web/emsdk/
+
+# WebGL build outputs - KEEP these for Cloudflare Pages deployment
+# acidwarp.web/index.js
+# acidwarp.web/index.wasm
+
+# Original tarball
+acidwarp-1.0.tar.gz
+
+# Working directory (if any)
+acidwarp.working/
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+*.orig
