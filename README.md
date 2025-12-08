@@ -2,11 +2,9 @@
 
 A mesmerizing visual effects program originally created by Noah Spurrier in 1992-1993, ported to Linux by Steven Wills, and now available as a WebGL browser application.
 
-![Acidwarp Screenshot](https://raw.githubusercontent.com/YOUR_USERNAME/acidwarp/main/screenshot.png)
-
 ## 🌐 Try It Online
 
-**[Launch Acidwarp Web](https://YOUR_USERNAME.github.io/acidwarp/)**
+**[Launch Acidwarp Web](https://acidwarp.bithash.cc/)**
 
 ## Features
 
