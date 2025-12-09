@@ -103,4 +103,4 @@ WebGL port and modern effects added 2025.
 
 - **Noah Spurrier** - Original author
 - **Steven Wills** - Linux port
-- **[Your Name]** - WebGL port and modern effects
+
