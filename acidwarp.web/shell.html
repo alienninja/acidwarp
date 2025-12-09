@@ -14,12 +14,14 @@
         body {
             background: #000;
             min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-family: 'Courier New', monospace;
             color: #0f0;
+            overflow: hidden;
         }
         
         h1 {
@@ -37,6 +39,22 @@
         canvas.emscripten {
             display: block;
             background: #000;
+        }
+        
+        @media (min-width: 769px) {
+            /* Desktop: fixed size canvas */
+            canvas.emscripten {
+                width: 640px;
+                height: 480px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            /* Mobile: fit to screen */
+            canvas.emscripten {
+                max-width: 100vw;
+                max-height: calc(100dvh - 70px);
+            }
         }
         
         .controls {
@@ -83,6 +101,99 @@
         .footer a {
             color: #0f0;
         }
+
+        /* Mobile touch controls */
+        .touch-controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            z-index: 1000;
+            gap: 10px;
+            padding: 15px;
+            padding-bottom: max(15px, env(safe-area-inset-bottom));
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .touch-btn {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #0f0;
+            color: #0f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .touch-btn:active {
+            background: rgba(0, 255, 0, 0.5);
+        }
+
+        .touch-hint {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            opacity: 0.8;
+            transition: opacity 0.5s;
+        }
+
+        .touch-hint.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Show touch UI on mobile */
+        @media (pointer: coarse), (max-width: 768px) {
+            .controls {
+                display: none;
+            }
+            .touch-controls {
+                display: flex;
+            }
+            .touch-hint {
+                display: block;
+            }
+            #canvas-container {
+                border: none;
+                box-shadow: none;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .footer {
+                display: none;
+            }
+        }
+
+        /* Fullscreen mode */
+        body.fullscreen .touch-controls {
+            bottom: 30px;
+        }
+        body.fullscreen h1,
+        body.fullscreen .touch-hint,
+        body.fullscreen #status {
+            display: none;
+        }
+        body.fullscreen #canvas-container {
+            border: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
@@ -105,6 +216,16 @@
     
     <div class="footer">
         Original by Noah Spurrier (1992) • Linux port by Steven Wills • WebGL port by nano (2025)
+    </div>
+
+    <!-- Mobile touch controls -->
+    <div class="touch-hint" id="touch-hint">Swipe ←→ • Tap=Pause • Double-tap=Fullscreen</div>
+    <div class="touch-controls" id="touch-controls">
+        <button class="touch-btn" id="btn-prev">◀</button>
+        <button class="touch-btn" id="btn-mode">M</button>
+        <button class="touch-btn" id="btn-pause">⏸</button>
+        <button class="touch-btn" id="btn-lock">🔒</button>
+        <button class="touch-btn" id="btn-next">▶</button>
     </div>
 
     <script type='text/javascript'>
@@ -150,6 +271,138 @@
             Module.setStatus('Error! Check console for details.');
             loadingElement.innerHTML = 'Error loading';
         };
+
+        // Mobile touch support
+        (function() {
+            var canvas = document.getElementById('canvas');
+            var touchStartX = 0;
+            var touchStartY = 0;
+            var lastTap = 0;
+            var isFullscreen = false;
+
+            function simulateKey(key) {
+                var keyCode = key.toUpperCase().charCodeAt(0);
+                var event = new KeyboardEvent('keydown', {
+                    key: key,
+                    code: 'Key' + key.toUpperCase(),
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true,
+                    cancelable: true
+                });
+                window.dispatchEvent(event);
+                document.dispatchEvent(event);
+                canvas.dispatchEvent(event);
+            }
+
+            function simulateArrow(direction) {
+                var keyCode = direction === 'left' ? 37 : 39;
+                var event = new KeyboardEvent('keydown', {
+                    key: 'Arrow' + (direction === 'left' ? 'Left' : 'Right'),
+                    code: 'Arrow' + (direction === 'left' ? 'Left' : 'Right'),
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true
+                });
+                canvas.dispatchEvent(event);
+            }
+
+            function simulateSpace() {
+                var event = new KeyboardEvent('keydown', {
+                    key: ' ',
+                    code: 'Space',
+                    keyCode: 32,
+                    which: 32,
+                    bubbles: true
+                });
+                canvas.dispatchEvent(event);
+            }
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(function() {
+                        document.body.classList.add('fullscreen');
+                        isFullscreen = true;
+                    }).catch(function() {});
+                } else {
+                    document.exitFullscreen().then(function() {
+                        document.body.classList.remove('fullscreen');
+                        isFullscreen = false;
+                    }).catch(function() {});
+                }
+            }
+
+            // Button handlers
+            document.getElementById('btn-prev').addEventListener('click', function() {
+                simulateArrow('left');
+            });
+            document.getElementById('btn-next').addEventListener('click', function() {
+                simulateArrow('right');
+            });
+            document.getElementById('btn-mode').addEventListener('click', function() {
+                simulateKey('m');
+            });
+            document.getElementById('btn-pause').addEventListener('click', function() {
+                simulateSpace();
+            });
+            document.getElementById('btn-lock').addEventListener('click', function() {
+                simulateKey('l');
+            });
+
+            // Touch gestures on canvas
+            canvas.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            canvas.addEventListener('touchend', function(e) {
+                var touchEndX = e.changedTouches[0].clientX;
+                var touchEndY = e.changedTouches[0].clientY;
+                var deltaX = touchEndX - touchStartX;
+                var deltaY = touchEndY - touchStartY;
+                var now = Date.now();
+
+                // Swipe detection (horizontal)
+                if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (deltaX > 0) {
+                        simulateArrow('right');
+                    } else {
+                        simulateArrow('left');
+                    }
+                    return;
+                }
+
+                // Double-tap detection
+                if (now - lastTap < 300) {
+                    toggleFullscreen();
+                    lastTap = 0;
+                    return;
+                }
+                lastTap = now;
+
+                // Single tap = pause (with delay to check for double-tap)
+                setTimeout(function() {
+                    if (lastTap !== 0 && Date.now() - lastTap >= 280) {
+                        simulateSpace();
+                    }
+                }, 300);
+            }, { passive: true });
+
+            // Handle fullscreen change
+            document.addEventListener('fullscreenchange', function() {
+                if (!document.fullscreenElement) {
+                    document.body.classList.remove('fullscreen');
+                    isFullscreen = false;
+                }
+            });
+            // Auto-hide touch hint after 4 seconds
+            var touchHint = document.getElementById('touch-hint');
+            if (touchHint) {
+                setTimeout(function() {
+                    touchHint.classList.add('hidden');
+                }, 4000);
+            }
+        })();
     </script>
     {{{ SCRIPT }}}
 </body>

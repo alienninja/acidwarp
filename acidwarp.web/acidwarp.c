@@ -495,6 +495,24 @@ int window_height = 480;
 int fullscreen = 0;
 int userOptionImageFuncNum = -1;
 
+#ifdef __EMSCRIPTEN__
+EM_JS(int, is_mobile_device, (), {
+    return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) && (window.innerWidth <= 768);
+});
+EM_JS(int, get_canvas_width, (), {
+    var isMobile = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) && (window.innerWidth <= 768);
+    return isMobile ? Math.min(window.innerWidth, screen.width) : 640;
+});
+EM_JS(int, get_canvas_height, (), {
+    var isMobile = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) && (window.innerWidth <= 768);
+    if (isMobile) {
+        // Leave room for touch controls on mobile (70px)
+        return Math.min(window.innerHeight, screen.height) - 70;
+    }
+    return 480;
+});
+#endif
+
 // Helper to convert 8-bit framebuffer to 32-bit RGBA
 void convert_8bit_to_32bit(const UCHAR *src, Uint32 *dst, int width, int height, const UCHAR *palette) {
     for (int y = 0; y < height; ++y) {
@@ -882,6 +900,14 @@ static const char *texture_frag_src =
 #endif
 
 void graphicsinit(void) {
+#ifdef __EMSCRIPTEN__
+    // Get actual screen dimensions on web
+    window_width = get_canvas_width();
+    window_height = get_canvas_height();
+    // Ensure minimum size
+    if (window_width < 320) window_width = 320;
+    if (window_height < 240) window_height = 240;
+#endif
     XMax = window_width;
     YMax = window_height;
     buf_graf = (UCHAR *)malloc(XMax * YMax);
