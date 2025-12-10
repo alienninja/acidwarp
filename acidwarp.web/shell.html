@@ -181,14 +181,9 @@
             }
         }
 
-        /* Fullscreen mode */
+        /* Fullscreen mode - hide touch controls entirely, gestures handle everything */
         body.fullscreen .touch-controls {
-            bottom: 30px;
-            transition: opacity 0.5s ease;
-        }
-        body.fullscreen .touch-controls.hidden {
-            opacity: 0;
-            pointer-events: none;
+            display: none;
         }
         body.fullscreen h1,
         body.fullscreen .touch-hint,
@@ -394,44 +389,12 @@
             }, { passive: true });
 
             // Handle fullscreen change
-            var touchControls = document.getElementById('touch-controls');
-            var fullscreenHideTimer = null;
-
-            function showTouchControls() {
-                if (touchControls && isFullscreen) {
-                    touchControls.classList.remove('hidden');
-                    clearTimeout(fullscreenHideTimer);
-                    fullscreenHideTimer = setTimeout(function() {
-                        if (isFullscreen) {
-                            touchControls.classList.add('hidden');
-                        }
-                    }, 3000);
-                }
-            }
-
-            function hideTouchControlsInFullscreen() {
-                if (touchControls && isFullscreen) {
-                    fullscreenHideTimer = setTimeout(function() {
-                        touchControls.classList.add('hidden');
-                    }, 3000);
-                }
-            }
-
             document.addEventListener('fullscreenchange', function() {
                 if (!document.fullscreenElement) {
                     document.body.classList.remove('fullscreen');
                     isFullscreen = false;
-                    touchControls.classList.remove('hidden');
-                    clearTimeout(fullscreenHideTimer);
-                } else {
-                    hideTouchControlsInFullscreen();
                 }
             });
-
-            // Show controls on any touch in fullscreen
-            document.addEventListener('touchstart', function() {
-                showTouchControls();
-            }, { passive: true });
 
             // Auto-hide touch hint after 4 seconds
             var touchHint = document.getElementById('touch-hint');
