@@ -103,4 +103,6 @@ WebGL port and modern effects added 2025.
 
 - **Noah Spurrier** - Original author
 - **Steven Wills** - Linux port
+- https://www.noah.org/acidwarp/
+- https://github.com/dreamlayers/acidwarp
 
