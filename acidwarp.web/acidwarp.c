@@ -39,6 +39,11 @@ int current_modern_effect = 0;
 #define NUM_MODERN_EFFECTS 6
 static Uint32 effect_time_base = 0;  // For animated effects
 
+// Classic mode frame timing - original uses usleep(30000) = 30ms between frames
+// At 60fps we get ~16.6ms per frame, so we skip frames to match original speed
+static Uint32 last_classic_frame_time = 0;
+#define CLASSIC_FRAME_DELAY_MS 30  // Match original 30ms delay
+
 // WebGL shader state
 #ifdef __EMSCRIPTEN__
 static GLuint gl_vbo = 0;
@@ -1003,6 +1008,15 @@ void main_loop_iteration(void) {
     if (paused) {
         SDL_Delay(10);
         return;
+    }
+
+    /* Classic mode: throttle to match original speed (~30ms per frame) */
+    if (!modern_mode) {
+        Uint32 now = SDL_GetTicks();
+        if (now - last_classic_frame_time < CLASSIC_FRAME_DELAY_MS) {
+            return;  /* Skip this frame to slow down */
+        }
+        last_classic_frame_time = now;
     }
 
     switch (current_state) {
